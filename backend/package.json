@@ -1,0 +1,38 @@
+{
+  "name": "bandifinder-api",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "node build.mjs",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@clerk/backend": "^3.16.7",
+    "@hono/node-server": "^2.1.1",
+    "@hono/zod-validator": "^0.9.0",
+    "@langchain/core": "^1.2.8",
+    "@langchain/langgraph": "^1.4.10",
+    "@langchain/langgraph-checkpoint-postgres": "^1.0.4",
+    "@langchain/openai": "^1.5.8",
+    "@pinecone-database/pinecone": "^8.2.0",
+    "@sentry/node": "^10.38.0",
+    "@supabase/supabase-js": "^2.95.3",
+    "dotenv": "^17.2.3",
+    "hono": "^4.6.0",
+    "openai": "^7.5.0",
+    "stripe": "^22.5.0",
+    "svix": "^1.84.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.5",
+    "@types/node": "^26.2.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.19.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.0.18"
+  }
+}

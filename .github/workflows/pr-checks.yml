@@ -1,0 +1,118 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR title format
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?:\ .+ ]]; then
+            echo "::warning::PR title should follow conventional commits format"
+            echo "Examples: 'feat: add user authentication', 'fix(api): resolve rate limiting issue'"
+          fi
+
+      - name: Check for large files
+        run: |
+          LARGE_FILES=$(find . -type f -size +1M -not -path "./.git/*" -not -path "./node_modules/*" 2>/dev/null || true)
+          if [ -n "$LARGE_FILES" ]; then
+            echo "::warning::Large files detected (>1MB):"
+            echo "$LARGE_FILES"
+          fi
+
+      - name: Check for sensitive files
+        run: |
+          SENSITIVE_PATTERNS=".env .env.local .env.production credentials.json service-account.json"
+          for pattern in $SENSITIVE_PATTERNS; do
+            if git diff --name-only origin/main...HEAD | grep -q "$pattern"; then
+              echo "::error::Potentially sensitive file detected: $pattern"
+              exit 1
+            fi
+          done
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix backend
+
+      - name: Check for console.log in production code
+        run: |
+          CONSOLE_LOGS=$(grep -rn "console.log" --include="*.ts" --include="*.tsx" \
+            --exclude-dir=node_modules --exclude-dir=__tests__ --exclude="*.test.ts" \
+            . 2>/dev/null | grep -v "// eslint-disable" || true)
+          if [ -n "$CONSOLE_LOGS" ]; then
+            echo "::warning::console.log statements found (consider using structured logging):"
+            echo "$CONSOLE_LOGS" | head -20
+          fi
+
+  bundle-size:
+    name: Bundle Size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and check bundle size
+        run: |
+          npm run build
+          BUNDLE_SIZE=$(du -sm .next 2>/dev/null | cut -f1 || echo "0")
+          echo "Bundle size: ${BUNDLE_SIZE}MB"
+          if [ "$BUNDLE_SIZE" -gt 100 ]; then
+            echo "::warning::Bundle size is large (${BUNDLE_SIZE}MB). Consider code splitting."
+          fi
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_dummy' }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+  dependencies:
+    name: Dependency Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check for outdated dependencies
+        run: |
+          echo "Root dependencies:"
+          npm outdated || true
+          echo ""
+          echo "API dependencies:"
+          cd api && npm outdated || true
+        continue-on-error: true

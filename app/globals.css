@@ -1,0 +1,226 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   Bandifinder — "Strumento di precisione"
+   ==========================================================================
+
+   An instrument for deciding which public contracts to bid on, in the Italian
+   industrial-design tradition of making bureaucratic machines humane.
+
+   Palette
+     Carta       #F7F6F3   warm technical paper
+     Inchiostro  #1A1A17   warm near-black
+     Verderame   #1F5D57   deep teal — primary, and the BID verdict
+     Ottone      #A8752A   brass — the REVIEW verdict, caution
+     Grafite     #6E6E66   warm grey — the SKIP verdict, inert
+     Vermiglio   #C6432B   vermilion — deadlines only
+
+   The one rule that keeps this legible: vermilion means "time is running
+   out" and nothing else. A low score is graphite, not red — being a poor fit
+   is information, not an emergency. Reserving the loud colour for deadlines
+   is what makes an approaching deadline actually read as urgent.
+   ========================================================================== */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-display: var(--font-archivo);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Verdicts and urgency — used by scoring UI. */
+  --color-bid: var(--bid);
+  --color-bid-soft: var(--bid-soft);
+  --color-review: var(--review);
+  --color-review-soft: var(--review-soft);
+  --color-skip: var(--skip);
+  --color-skip-soft: var(--skip-soft);
+  --color-urgent: var(--urgent);
+  --color-urgent-soft: var(--urgent-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 3px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  /* Tighter than the stock 0.625rem: this is an instrument, not a toy. */
+  --radius: 0.375rem;
+
+  --background: oklch(0.972 0.004 95);
+  --foreground: oklch(0.2 0.006 95);
+
+  --card: oklch(1 0.002 95);
+  --card-foreground: oklch(0.2 0.006 95);
+  --popover: oklch(1 0.002 95);
+  --popover-foreground: oklch(0.2 0.006 95);
+
+  --primary: oklch(0.4 0.055 190);
+  --primary-foreground: oklch(0.98 0.004 95);
+
+  --secondary: oklch(0.945 0.005 95);
+  --secondary-foreground: oklch(0.3 0.008 95);
+
+  --muted: oklch(0.945 0.005 95);
+  --muted-foreground: oklch(0.5 0.008 95);
+
+  --accent: oklch(0.93 0.012 190);
+  --accent-foreground: oklch(0.33 0.05 190);
+
+  --destructive: oklch(0.545 0.17 32);
+
+  --border: oklch(0.885 0.005 95);
+  --input: oklch(0.885 0.005 95);
+  --ring: oklch(0.4 0.055 190);
+
+  --bid: oklch(0.4 0.055 190);
+  --bid-soft: oklch(0.93 0.02 190);
+  --review: oklch(0.55 0.09 75);
+  --review-soft: oklch(0.94 0.03 80);
+  --skip: oklch(0.5 0.008 95);
+  --skip-soft: oklch(0.93 0.004 95);
+  --urgent: oklch(0.545 0.17 32);
+  --urgent-soft: oklch(0.94 0.035 32);
+
+  /* Charts run teal -> brass, so a series reads as a single scale rather
+     than as unrelated categories. */
+  --chart-1: oklch(0.4 0.055 190);
+  --chart-2: oklch(0.52 0.07 175);
+  --chart-3: oklch(0.63 0.075 130);
+  --chart-4: oklch(0.66 0.09 95);
+  --chart-5: oklch(0.6 0.11 60);
+}
+
+.dark {
+  --background: oklch(0.185 0.006 95);
+  --foreground: oklch(0.95 0.004 95);
+
+  --card: oklch(0.225 0.007 95);
+  --card-foreground: oklch(0.95 0.004 95);
+  --popover: oklch(0.225 0.007 95);
+  --popover-foreground: oklch(0.95 0.004 95);
+
+  --primary: oklch(0.72 0.09 185);
+  --primary-foreground: oklch(0.18 0.02 190);
+
+  --secondary: oklch(0.28 0.008 95);
+  --secondary-foreground: oklch(0.95 0.004 95);
+
+  --muted: oklch(0.28 0.008 95);
+  --muted-foreground: oklch(0.68 0.007 95);
+
+  --accent: oklch(0.32 0.03 190);
+  --accent-foreground: oklch(0.88 0.05 185);
+
+  --destructive: oklch(0.66 0.16 32);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.72 0.09 185);
+
+  --bid: oklch(0.72 0.09 185);
+  --bid-soft: oklch(0.32 0.035 190);
+  --review: oklch(0.76 0.1 80);
+  --review-soft: oklch(0.33 0.04 80);
+  --skip: oklch(0.68 0.007 95);
+  --skip-soft: oklch(0.3 0.006 95);
+  --urgent: oklch(0.7 0.16 33);
+  --urgent-soft: oklch(0.33 0.06 32);
+
+  --chart-1: oklch(0.72 0.09 185);
+  --chart-2: oklch(0.75 0.09 170);
+  --chart-3: oklch(0.79 0.09 130);
+  --chart-4: oklch(0.8 0.1 95);
+  --chart-5: oklch(0.74 0.12 60);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv05" 1, "ss01" 1;
+  }
+
+  /* Display face, used sparingly: page titles and the score readout. Wide
+     and tight-tracked so it reads as signage rather than as body copy. */
+  h1,
+  h2,
+  .font-display {
+    font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+    font-stretch: 112%;
+    letter-spacing: -0.015em;
+  }
+
+  /* Figures are compared down columns constantly — values, scores, days
+     left — so they must never jitter between rows. */
+  .tabular-nums,
+  table,
+  time,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* ------------------------------------------------------------------
+     Eyebrow: a small caps label that names a region of the page.
+     ------------------------------------------------------------------ */
+  .eyebrow {
+    @apply text-[0.6875rem] font-medium uppercase text-muted-foreground;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    letter-spacing: 0.12em;
+  }
+
+  /* ------------------------------------------------------------------
+     Code chip: CPV codes and protocol numbers. These are a taxonomy, not
+     prose, and setting them in mono makes their structure visible —
+     72 / 72.2 / 72200000 all line up by division.
+     ------------------------------------------------------------------ */
+  .code-chip {
+    @apply inline-flex items-center rounded-sm border border-border bg-muted px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    letter-spacing: 0.02em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
