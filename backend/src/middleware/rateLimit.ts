@@ -152,9 +152,6 @@ export const rateLimits = {
 
   /** Export endpoints: 10 requests per minute */
   export: rateLimitMiddleware({ limit: 10, window: 60 }),
-
-  /** Auth endpoints: 5 requests per minute */
-  auth: rateLimitMiddleware({ limit: 5, window: 60 }),
 };
 
 /** Exposed for tests: drop all process-local fallback state. */

@@ -1,21 +1,17 @@
 import { auth } from "@clerk/nextjs/server";
-import { SettingsShell } from "./components/SettingsShell";
 
 /**
- * Guards /settings.
+ * Guards /pipeline.
  *
  * Replaces the `createRouteMatcher` entry that used to protect this segment
  * from the proxy. The check now sits on the segment it protects, so it cannot
  * drift out of sync with the route tree the way a path glob can.
- *
- * The visual shell moved to `components/SettingsShell` because it needs
- * `usePathname`, and a server component cannot use hooks.
  */
-export default async function SettingsLayout({
+export default async function PipelineLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   await auth.protect();
-  return <SettingsShell>{children}</SettingsShell>;
+  return <>{children}</>;
 }

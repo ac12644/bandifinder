@@ -7,7 +7,10 @@
 
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
+// Node.js, not Edge. Edge is deprecated, and it could never have honoured the
+// maxDuration below — this job fans out to two ingestion endpoints that walk
+// TED and ANAC, which is minutes of work, not the seconds Edge allows.
+export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes
 
 const API_BASE_URL =

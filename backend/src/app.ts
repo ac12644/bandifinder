@@ -5,7 +5,7 @@
  * ✅ LangGraph Supervisor with Intent Classification
  * ✅ Specialized Agents (Search, Analysis, Ranking, Personalization, ContractReview)
  * ✅ Real TED API Integration
- * ✅ Supabase Postgres + Pinecone Vector Database + GraphRAG Knowledge Graph
+ * ✅ Supabase Postgres + Pinecone Vector Database
  * ✅ Clerk Authentication (JWT, Organizations, RBAC)
  * ✅ SSE Streaming for Real-time Responses
  * ✅ Modular Route Architecture
@@ -159,7 +159,6 @@ app.use("*", async (c, next) => {
 app.use("*", observabilityMiddleware({
   logging: true,
   metrics: true,
-  tracing: true,
   skipPaths: ["/health", "/", "/metrics"],
 }));
 
@@ -190,7 +189,6 @@ app.get("/", (c) =>
         "Real TED API Integration",
         "Supabase Postgres (Structured Data)",
         "Pinecone Vector Database (Embeddings)",
-        "GraphRAG Knowledge Graph",
         "Clerk Authentication (JWT, Orgs, RBAC)",
         "SSE Streaming",
         "Thread-based Memory (Checkpointing)",
@@ -262,7 +260,6 @@ for (const path of [
   "/tenders/favorites",
   "/tenders/:id/decision",
   "/tenders/index",
-  "/tenders/graphrag/index",
 ]) {
   app.use(path, requireAccount);
 }
@@ -276,7 +273,6 @@ const SEARCH_QUOTA_PATHS = [
   "/tenders/advanced",
   "/tenders/semantic",
   "/tenders/similar",
-  "/tenders/graphrag",
 ];
 for (const path of SEARCH_QUOTA_PATHS) {
   app.use(path, searchLimitMiddleware());
@@ -408,20 +404,6 @@ app.get("/getAdminMetrics", authMiddleware, adminMiddleware, async (c) => {
         ? Math.round(latencyHistogram.sum / latencyHistogram.count)
         : 0;
 
-    // Agent execution counters
-    const agentExecutions: Record<string, { count: number; errors: number }> = {};
-    for (const counter of snapshot.counters) {
-      if (counter.name === "agent_executions_total" && counter.labels.agent) {
-        const agent = counter.labels.agent;
-        if (!agentExecutions[agent]) agentExecutions[agent] = { count: 0, errors: 0 };
-        agentExecutions[agent].count += counter.value;
-      }
-      if (counter.name === "agent_errors_total" && counter.labels.agent) {
-        const agent = counter.labels.agent;
-        if (!agentExecutions[agent]) agentExecutions[agent] = { count: 0, errors: 0 };
-        agentExecutions[agent].errors += counter.value;
-      }
-    }
 
     return c.json({
       period: { start: startDate.toISOString(), end: now.toISOString(), days },
@@ -437,7 +419,6 @@ app.get("/getAdminMetrics", authMiddleware, adminMiddleware, async (c) => {
           httpRequestsTotal > 0
             ? Math.round((httpErrorsTotal / httpRequestsTotal) * 1000) / 10
             : 0,
-        agentExecutions,
       },
       timestamp: now.toISOString(),
     });

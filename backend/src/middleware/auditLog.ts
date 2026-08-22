@@ -291,7 +291,7 @@ export function auditLogMiddleware(config: Partial<AuditConfig> = {}) {
     const path = c.req.path;
 
     // Skip excluded paths
-    if (finalConfig.skipPaths.some((p) => path.startsWith(p))) {
+    if (finalConfig.skipPaths.some((p) => path === p || path.startsWith(p + "/"))) {
       return next();
     }
 

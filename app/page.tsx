@@ -135,7 +135,6 @@ export default function HomePage() {
     tenders: streamingTenders,
     contractReview: streamContractReview,
     explainability: streamExplainability,
-    graphrag: streamGraphrag,
     stream,
     reset: resetStream,
   } = useAgentStream();
@@ -156,8 +155,17 @@ export default function HomePage() {
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
 
   // Suggestions state
-  const [suggestions, setSuggestions] = useState<string[]>(loadSuggestions());
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>(loadAISuggestions());
+  // Seeded empty, then filled from localStorage in an effect below.
+  //
+  // A "use client" component is still server-rendered for the initial HTML, so
+  // a `useState(loadSuggestions())` initialiser runs on the server, where
+  // there is no browser storage. Node now ships a `localStorage` global, so
+  // instead of throwing into the try/catch it warns
+  // ("--localstorage-file was provided without a valid path") on every render
+  // and returns nothing — and the server HTML (no suggestions) then disagreed
+  // with the first client render (suggestions), which is a hydration mismatch.
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [personalizedSuggestions, setPersonalizedSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
@@ -233,6 +241,12 @@ export default function HomePage() {
       setAnalyzingTender(null);
     }
   }
+
+  // Read persisted suggestions once, on the client, where storage exists.
+  useEffect(() => {
+    setSuggestions(loadSuggestions());
+    setAiSuggestions(loadAISuggestions());
+  }, []);
 
   // Load AI suggestions on mount
   useEffect(() => {
@@ -356,7 +370,6 @@ export default function HomePage() {
                 analyzeEligibility={analyzeEligibility}
                 analyzingTender={analyzingTender}
                 explainability={streamExplainability}
-                graphrag={streamGraphrag}
               />
 
               <SuggestionsPanel

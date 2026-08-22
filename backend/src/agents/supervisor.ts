@@ -19,11 +19,13 @@ import {
 } from "@langchain/langgraph";
 import { BaseMessage, AIMessage, HumanMessage } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
-import { searchAgent } from "./search";
-import { analysisAgent } from "./analysis";
-import { personalizationAgent } from "./personalization";
-import { rankingAgent } from "./ranking";
-import { contractReviewAgent } from "./contractReview";
+import {
+  searchAgent,
+  analysisAgent,
+  personalizationAgent,
+  rankingAgent,
+  contractReviewAgent,
+} from "./specialists";
 import { logger } from "../lib/observability";
 import { getCheckpointer } from "../lib/checkpointer";
 
@@ -31,78 +33,43 @@ import { getCheckpointer } from "../lib/checkpointer";
 // EXTENDED STATE ANNOTATION
 // ============================================================================
 
+/** A last-write-wins channel with a starting value. */
+const lastValue = <T>(initial: T) =>
+  Annotation<T>({ reducer: (_, update) => update, default: () => initial });
+
 /**
  * Extended workflow state with quality control fields.
  */
 export const SupervisorState = Annotation.Root({
-  // Core message history
+  // Core message history — the one channel that accumulates rather than replaces.
   messages: Annotation<BaseMessage[]>({
     reducer: (curr, update) => [...curr, ...update],
     default: () => [],
   }),
 
-  // Intent classification
-  intent: Annotation<string>({
-    reducer: (_, update) => update,
-    default: () => "unknown",
-  }),
+  intent: lastValue("unknown"),
 
   // Quality control
-  qualityScore: Annotation<number>({
-    reducer: (_, update) => update,
-    default: () => 0,
-  }),
-
-  qualityIssues: Annotation<string[]>({
-    reducer: (_, update) => update,
-    default: () => [],
-  }),
+  qualityScore: lastValue(0),
+  qualityIssues: lastValue<string[]>([]),
 
   // Whether qualityScore reflects a real assessment. When the judge is not run
   // or its output cannot be parsed, the score is meaningless and downstream
   // gates must not read it as a verdict.
-  qualityAssessed: Annotation<boolean>({
-    reducer: (_, update) => update,
-    default: () => false,
-  }),
+  qualityAssessed: lastValue(false),
 
   // Reflection
-  needsReflection: Annotation<boolean>({
-    reducer: (_, update) => update,
-    default: () => false,
-  }),
-
-  reflectionFeedback: Annotation<string>({
-    reducer: (_, update) => update,
-    default: () => "",
-  }),
-
-  reflectionCount: Annotation<number>({
-    reducer: (_, update) => update,
-    default: () => 0,
-  }),
+  needsReflection: lastValue(false),
+  reflectionFeedback: lastValue(""),
+  reflectionCount: lastValue(0),
 
   // Human-in-the-loop
-  requiresHumanReview: Annotation<boolean>({
-    reducer: (_, update) => update,
-    default: () => false,
-  }),
-
-  humanReviewReason: Annotation<string>({
-    reducer: (_, update) => update,
-    default: () => "",
-  }),
+  requiresHumanReview: lastValue(false),
+  humanReviewReason: lastValue(""),
 
   // Metadata
-  agentUsed: Annotation<string>({
-    reducer: (_, update) => update,
-    default: () => "",
-  }),
-
-  executionTimeMs: Annotation<number>({
-    reducer: (_, update) => update,
-    default: () => 0,
-  }),
+  agentUsed: lastValue(""),
+  executionTimeMs: lastValue(0),
 });
 
 type SupervisorStateType = typeof SupervisorState.State;

@@ -17,20 +17,6 @@ export interface AIExplainability {
   humanReviewReason?: string;
 }
 
-export interface GraphRAGInfo {
-  graphStats?: {
-    nodesTraversed: number;
-    edgesTraversed: number;
-    expansionPaths: number;
-  };
-  timing?: {
-    vectorSearchMs: number;
-    graphTraversalMs: number;
-    rerankingMs: number;
-    totalMs: number;
-  };
-}
-
 export interface StreamChunk {
   content?: string;
   done?: boolean;
@@ -50,8 +36,6 @@ export interface StreamChunk {
   };
   // Explainability data
   explainability?: AIExplainability;
-  // GraphRAG data
-  graphrag?: GraphRAGInfo;
 }
 
 export function useAgentStream() {
@@ -65,7 +49,6 @@ export function useAgentStream() {
     useState<StreamChunk["contractReview"]>(undefined);
   const [metadata, setMetadata] = useState<StreamChunk["metadata"]>(undefined);
   const [explainability, setExplainability] = useState<AIExplainability | undefined>(undefined);
-  const [graphrag, setGraphrag] = useState<GraphRAGInfo | undefined>(undefined);
 
   // AbortController for cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -109,7 +92,6 @@ export function useAgentStream() {
       setContractReview(undefined);
       setMetadata(undefined);
       setExplainability(undefined);
-      setGraphrag(undefined);
 
       try {
         const response = await fetch(`${API_BASE_URL}${ENDPOINTS.agentStream}`, {
@@ -194,10 +176,6 @@ export function useAgentStream() {
                     setExplainability(data.explainability);
                   }
 
-                  if (data.graphrag) {
-                    setGraphrag(data.graphrag);
-                  }
-
                   if (data.done) {
                     setIsStreaming(false);
                     return;
@@ -256,7 +234,6 @@ export function useAgentStream() {
     setContractReview(undefined);
     setMetadata(undefined);
     setExplainability(undefined);
-    setGraphrag(undefined);
   }, [stop]);
 
   return {
@@ -268,7 +245,6 @@ export function useAgentStream() {
     contractReview,
     metadata,
     explainability,
-    graphrag,
     stream,
     stop,
     reset,

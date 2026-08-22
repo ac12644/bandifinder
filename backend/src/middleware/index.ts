@@ -60,30 +60,23 @@ import type { Env } from "../app";
 import { rateLimits } from "./rateLimit";
 import { sanitizationMiddleware } from "./sanitization";
 import { piiDetectionMiddleware } from "./piiDetection";
-import { auditLogMiddleware } from "./auditLog";
 
 /**
  * Security configuration for different endpoint types.
  */
 export interface SecurityStackConfig {
   /** Rate limit preset */
-  rateLimit?: "standard" | "search" | "agent" | "export" | "auth" | "none";
+  rateLimit?: "standard" | "search" | "agent" | "export" | "none";
   /** Enable input sanitization */
   sanitization?: boolean;
   /** Enable PII detection */
   piiDetection?: boolean;
-  /** Block high-sensitivity PII */
-  blockPII?: boolean;
-  /** Enable audit logging */
-  auditLogging?: boolean;
 }
 
 const DEFAULT_SECURITY_CONFIG: SecurityStackConfig = {
   rateLimit: "standard",
   sanitization: true,
   piiDetection: true,
-  blockPII: false,
-  auditLogging: true,
 };
 
 /**
@@ -93,10 +86,8 @@ export function createSecurityStack(config: SecurityStackConfig = {}) {
   const finalConfig = { ...DEFAULT_SECURITY_CONFIG, ...config };
   const middlewares: ReturnType<typeof createMiddleware<Env>>[] = [];
 
-  // Add audit logging first (captures all requests)
-  if (finalConfig.auditLogging) {
-    middlewares.push(auditLogMiddleware());
-  }
+  // Audit logging is mounted globally in app.ts; adding it here too would
+  // write every request twice.
 
   // Add rate limiting
   if (finalConfig.rateLimit && finalConfig.rateLimit !== "none") {
@@ -110,11 +101,7 @@ export function createSecurityStack(config: SecurityStackConfig = {}) {
 
   // Add PII detection
   if (finalConfig.piiDetection) {
-    middlewares.push(
-      piiDetectionMiddleware({
-        blockHighSensitivity: finalConfig.blockPII,
-      })
-    );
+    middlewares.push(piiDetectionMiddleware());
   }
 
   // Return combined middleware
@@ -143,7 +130,6 @@ export const securityStacks = {
     rateLimit: "standard",
     sanitization: true,
     piiDetection: true,
-    auditLogging: true,
   }),
 
   /** Search endpoints - stricter rate limiting */
@@ -151,7 +137,6 @@ export const securityStacks = {
     rateLimit: "search",
     sanitization: true,
     piiDetection: false, // Search queries may contain names
-    auditLogging: true,
   }),
 
   /** Agent endpoints - strict controls */
@@ -159,8 +144,6 @@ export const securityStacks = {
     rateLimit: "agent",
     sanitization: true,
     piiDetection: true,
-    blockPII: false, // Don't block, but log
-    auditLogging: true,
   }),
 
   /** Export endpoints - strict rate limiting */
@@ -168,23 +151,7 @@ export const securityStacks = {
     rateLimit: "export",
     sanitization: true,
     piiDetection: true,
-    auditLogging: true,
   }),
 
-  /** Auth endpoints - very strict */
-  auth: createSecurityStack({
-    rateLimit: "auth",
-    sanitization: true,
-    piiDetection: true,
-    blockPII: true, // Block PII in auth requests
-    auditLogging: true,
-  }),
 
-  /** Health/info endpoints - minimal */
-  health: createSecurityStack({
-    rateLimit: "none",
-    sanitization: false,
-    piiDetection: false,
-    auditLogging: false,
-  }),
 };

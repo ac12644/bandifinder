@@ -62,10 +62,6 @@ export const ENDPOINTS = {
   saveFavorite: "/tenders/favorite",
   getFavorites: "/tenders/favorites",
 
-  // GraphRAG endpoints
-  graphragSearch: "/tenders/graphrag",
-  graphragIndex: "/tenders/graphrag/index",
-  graphragStats: "/tenders/graphrag/stats",
 
   // Semantic search endpoints
   semanticSearch: "/tenders/semantic",

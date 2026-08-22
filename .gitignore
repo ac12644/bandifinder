@@ -122,3 +122,11 @@ backend/.env.local
 # MCP Config (local dev tools)
 # -------------------------------------------------------
 .mcp.json
+
+# -------------------------------------------------------
+# Next.js auto-generated agent instructions
+# -------------------------------------------------------
+# Regenerated on every dev/build. Set `agentRules: false` in next.config.ts
+# to stop generating them.
+AGENTS.md
+CLAUDE.md

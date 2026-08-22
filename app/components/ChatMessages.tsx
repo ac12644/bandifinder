@@ -3,7 +3,7 @@
 import * as React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Bot, User, Network } from "lucide-react";
+import { Bot, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   ProgressiveTenderCard,
@@ -15,7 +15,7 @@ import {
   type AIMetadata,
 } from "@/components/explainability";
 import { cn } from "@/lib/utils";
-import type { AIExplainability, GraphRAGInfo } from "../hooks/useAgentStream";
+import type { AIExplainability } from "../hooks/useAgentStream";
 
 /* -------------------------------------------------------
  * Helpers
@@ -176,7 +176,6 @@ interface AssistantMessageProps {
   analyzeEligibility?: (tenderId: string) => Promise<AnalysisResult | null>;
   analyzingTender?: string | null;
   explainability?: AIExplainability;
-  graphrag?: GraphRAGInfo;
 }
 
 /* -------------------------------------------------------
@@ -235,7 +234,6 @@ export function AssistantMessage({
   analyzeEligibility,
   analyzingTender,
   explainability,
-  graphrag,
 }: AssistantMessageProps) {
   // Check if this is a contract review response
   const contractReview = React.useMemo(() => {
@@ -306,24 +304,6 @@ export function AssistantMessage({
     />
   );
 
-  // GraphRAG stats display
-  const graphragStats = graphrag?.graphStats && (
-    <div className="mt-3 pt-3 border-t border-gray-100">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Network className="h-3 w-3" />
-        <span>GraphRAG:</span>
-        <span>{graphrag.graphStats.nodesTraversed} nodi</span>
-        <span>·</span>
-        <span>{graphrag.graphStats.edgesTraversed} archi</span>
-        {graphrag.timing && (
-          <>
-            <span>·</span>
-            <span>{graphrag.timing.totalMs}ms</span>
-          </>
-        )}
-      </div>
-    </div>
-  );
 
   if (tenders.length > 0) {
     return (
@@ -400,7 +380,6 @@ export function AssistantMessage({
             />
           );
         })}
-        {graphragStats}
         {explainabilityCard}
       </div>
     );
@@ -413,7 +392,6 @@ export function AssistantMessage({
           {cleanAssistantText(text)}
         </ReactMarkdown>
       </div>
-      {graphragStats}
       {explainabilityCard}
     </div>
   );
@@ -432,7 +410,6 @@ interface ChatMessagesProps {
   analyzeEligibility?: (tenderId: string) => Promise<AnalysisResult | null>;
   analyzingTender?: string | null;
   explainability?: AIExplainability;
-  graphrag?: GraphRAGInfo;
 }
 
 export function ChatMessages({
@@ -444,7 +421,6 @@ export function ChatMessages({
   analyzeEligibility,
   analyzingTender,
   explainability,
-  graphrag,
 }: ChatMessagesProps) {
   return (
     <div className="space-y-4">
@@ -521,7 +497,6 @@ export function ChatMessages({
               analyzeEligibility={analyzeEligibility}
               analyzingTender={analyzingTender}
               explainability={explainability}
-              graphrag={graphrag}
             />
             <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
               <div className="flex gap-1">

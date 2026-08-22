@@ -104,7 +104,6 @@ interface AdminMetrics {
     httpErrorsTotal: number;
     avgLatencyMs: number;
     errorRate: number;
-    agentExecutions: Record<string, { count: number; errors: number }>;
   };
   timestamp: string;
 }
@@ -380,9 +379,9 @@ export default function AdminMetricsPage() {
   // Defensive defaults for potentially missing sections
   const pipeline = metrics.pipeline || { totalBids: 0, bidsByStatus: {}, winRate: 0, totalWonValue: 0, avgWonValue: 0, totalOutcomes: 0 };
   const platform = metrics.platform || { totalOrganizations: 0, totalUsers: 0, totalTenders: 0, tendersBySource: {}, planDistribution: {} };
+  const runtime = metrics.runtime || { httpRequestsTotal: 0, httpErrorsTotal: 0, avgLatencyMs: 0, errorRate: 0 };
   const ingestion = metrics.ingestion || { totalJobsInPeriod: 0, completedJobsInPeriod: 0, failedJobsInPeriod: 0, totalTendersNewInPeriod: 0, totalTendersFoundInPeriod: 0, lastCompletedBySource: {} };
   const activity = metrics.activity || { totalEventsInPeriod: 0, eventsByType: {}, totalSearches: 0, avgResultsPerSearch: 0, topUsers: [] };
-  const runtime = metrics.runtime || { httpRequestsTotal: 0, httpErrorsTotal: 0, avgLatencyMs: 0, errorRate: 0, agentExecutions: {} };
 
   const activeBids = Object.entries(pipeline.bidsByStatus)
     .filter(([status]) => !["won", "lost"].includes(status))
@@ -752,36 +751,6 @@ export default function AdminMetricsPage() {
                 <p className="text-[10px] text-muted-foreground">Error rate</p>
               </div>
             </div>
-
-            {Object.keys(runtime.agentExecutions).length > 0 && (
-              <div className="pt-3 border-t space-y-1.5">
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                  Agent Executions
-                </p>
-                {Object.entries(runtime.agentExecutions).map(
-                  ([agent, stats]) => (
-                    <div
-                      key={agent}
-                      className="flex items-center justify-between text-xs py-1"
-                    >
-                      <span className="capitalize text-muted-foreground">
-                        {agent}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="tabular-nums font-medium">
-                          {stats.count}
-                        </span>
-                        {stats.errors > 0 && (
-                          <Badge variant="destructive" className="text-[9px] h-4">
-                            {stats.errors} err
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-            )}
           </div>
 
           {/* Plan Distribution */}

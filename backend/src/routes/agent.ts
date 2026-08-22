@@ -85,74 +85,57 @@ agentRoutes.post(
 
         let accumulatedContent = "";
         const allMessages: unknown[] = [];
-        const seenMessageIds = new Set<string>();
 
-        // Process stream chunks
+        // `streamMode: "messages"` yields [messageChunk, metadata] tuples, and
+        // each AI chunk's `content` is a *token delta* — not the message so
+        // far. This previously treated deltas as cumulative and emitted
+        // `content.slice(accumulatedContent.length)`, which sliced mid-token
+        // against an ever-growing offset and shipped fragments like
+        // "erstvo financ" (the middle of "Ministerstvo financi") to the UI.
+        // Deltas are appended, not sliced.
+        //
+        // Chunks are also keyed by message id, which is stable across the
+        // chunks of one message, so a run that produces several AI messages
+        // (tool-calling turns, then the answer) keeps them separate.
+        const aiMessages = new Map<string, string>();
+
         for await (const chunk of agentStream) {
-          let messages: unknown[] = [];
+          // The tuple's second element is metadata, not a message.
+          const message = Array.isArray(chunk) ? chunk[0] : chunk;
+          const msgType = getMessageType(message);
+          const content = extractContent(message);
 
-          // Handle different chunk formats
-          if (chunk && typeof chunk === "object") {
-            if ("messages" in chunk && Array.isArray(chunk.messages)) {
-              messages = chunk.messages;
-            } else if (Array.isArray(chunk)) {
-              messages = chunk;
-            } else {
-              messages = [chunk];
-            }
+          // Tool outputs carry the structured tender payload the final frame
+          // needs, but must never reach the user as prose.
+          if (msgType === "tool") {
+            allMessages.push(message);
+            continue;
           }
 
-          for (const message of messages) {
-            const msgType = getMessageType(message);
-            const content = extractContent(message);
+          if (msgType !== "ai" || !content) continue;
 
-            // Create unique ID to avoid duplicates
-            const contentStr = content?.substring(0, 100) || "";
-            const msgId = `${msgType}-${contentStr}`;
+          const id = (message as { id?: string })?.id ?? "default";
+          const soFar = (aiMessages.get(id) ?? "") + content;
+          aiMessages.set(id, soFar);
 
-            if (!seenMessageIds.has(msgId)) {
-              seenMessageIds.add(msgId);
-              allMessages.push(message);
-            }
+          // Some agents are prompted to answer in JSON (ranking returns
+          // `rankedTenders`, contract review returns an analysis object). That
+          // is payload for the final frame, not prose, so it is accumulated but
+          // never streamed. The decision is stable: it depends only on the
+          // first non-whitespace character of the message.
+          const trimmed = soFar.trimStart();
+          if (trimmed.startsWith("{") || trimmed.startsWith("[")) continue;
 
-            // Only stream AI messages, not tool outputs
-            // Skip content that looks like raw JSON or tender data
-            const isToolMessage = msgType === "tool";
-            const isRawJson =
-              content &&
-              (content.trim().startsWith("{") ||
-                content.trim().startsWith("[") ||
-                content.includes('"tenders"') ||
-                content.includes('"query"') ||
-                content.includes('"publicationNumber"') ||
-                content.includes('"noticeId"') ||
-                content.includes("publication-date") ||
-                content.includes("publication-number") ||
-                // Skip partial/garbled content
-                content.includes("FT~") ||
-                content.includes("AND ") ||
-                // Skip if it contains JSON-like patterns
-                /"\w+":\s*["\[\{]/.test(content));
+          accumulatedContent += content;
+          await stream.writeSSE({
+            data: JSON.stringify({ content, done: false }),
+          });
+        }
 
-            // Send incremental content updates (only for clean AI text)
-            if (
-              content &&
-              !isToolMessage &&
-              !isRawJson &&
-              content.length > accumulatedContent.length &&
-              // Only send if content is meaningful (not just fragments)
-              content.length > 10
-            ) {
-              const newContent = content.slice(accumulatedContent.length);
-              // Only send if the new content is clean text
-              if (newContent && !newContent.includes('"') && !newContent.startsWith("{")) {
-                await stream.writeSSE({
-                  data: JSON.stringify({ content: newContent, done: false }),
-                });
-                accumulatedContent = content;
-              }
-            }
-          }
+        // Hand the formatter whole messages, not the token fragments: it
+        // JSON-parses each one to pull out tenders.
+        for (const [, text] of aiMessages) {
+          allMessages.push({ type: "ai", content: text });
         }
 
         // Format structured response with tender data

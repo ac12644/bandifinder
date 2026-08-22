@@ -297,84 +297,8 @@ export function recordHttpRequest(
   }
 }
 
-/**
- * Record agent execution metrics.
- */
-export function recordAgentExecution(
-  agentName: string,
-  durationMs: number,
-  success: boolean,
-  metadata?: { qualityScore?: number; reflectionCount?: number }
-): void {
-  const labels = { agent: agentName, success: String(success) };
 
-  metrics.incrementCounter("agent_executions_total", labels, 1, "Total agent executions");
-  metrics.recordHistogram("agent_execution_duration_ms", durationMs, labels, "Agent execution duration");
 
-  if (!success) {
-    metrics.incrementCounter("agent_errors_total", { agent: agentName }, 1, "Total agent errors");
-  }
-
-  if (metadata?.qualityScore !== undefined) {
-    metrics.recordHistogram(
-      "agent_quality_score",
-      metadata.qualityScore,
-      { agent: agentName },
-      "Agent response quality score"
-    );
-  }
-
-  if (metadata?.reflectionCount !== undefined) {
-    metrics.recordHistogram(
-      "agent_reflection_count",
-      metadata.reflectionCount,
-      { agent: agentName },
-      "Agent reflection iterations"
-    );
-  }
-}
-
-/**
- * Record LLM call metrics.
- */
-export function recordLLMCall(
-  provider: string,
-  model: string,
-  durationMs: number,
-  inputTokens: number,
-  outputTokens: number,
-  success: boolean
-): void {
-  const labels = { provider, model, success: String(success) };
-
-  metrics.incrementCounter("llm_calls_total", labels, 1, "Total LLM calls");
-  metrics.recordHistogram("llm_call_duration_ms", durationMs, labels, "LLM call duration");
-  metrics.recordHistogram("llm_input_tokens", inputTokens, { provider, model }, "LLM input tokens");
-  metrics.recordHistogram("llm_output_tokens", outputTokens, { provider, model }, "LLM output tokens");
-
-  if (!success) {
-    metrics.incrementCounter("llm_errors_total", { provider, model }, 1, "Total LLM errors");
-  }
-}
-
-/**
- * Record external API call metrics (TED API, etc.).
- */
-export function recordExternalApiCall(
-  api: string,
-  endpoint: string,
-  durationMs: number,
-  success: boolean
-): void {
-  const labels = { api, endpoint, success: String(success) };
-
-  metrics.incrementCounter("external_api_calls_total", labels, 1, "Total external API calls");
-  metrics.recordHistogram("external_api_duration_ms", durationMs, labels, "External API call duration");
-
-  if (!success) {
-    metrics.incrementCounter("external_api_errors_total", { api, endpoint }, 1, "Total external API errors");
-  }
-}
 
 /**
  * Update system health gauge.
@@ -383,12 +307,6 @@ export function updateHealthGauge(healthy: boolean): void {
   metrics.setGauge("system_health", healthy ? 1 : 0, {}, "System health status (1=healthy, 0=unhealthy)");
 }
 
-/**
- * Update active connections gauge.
- */
-export function updateActiveConnections(count: number): void {
-  metrics.setGauge("active_connections", count, {}, "Number of active connections");
-}
 
 // ============================================================================
 // HELPERS

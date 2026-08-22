@@ -3,10 +3,15 @@
  *
  * Protects against:
  * - XSS attacks
- * - SQL injection patterns
- * - NoSQL injection
- * - Command injection
  * - Prompt injection (LLM-specific)
+ *
+ * SQL, NoSQL and command-injection categories used to live here and were
+ * removed: there is no raw SQL in this codebase (Supabase parameterises every
+ * query), no Mongo, and no eval/child_process, so they guarded nothing while
+ * blocking real traffic. `command` matched any string containing & | ; ` or $,
+ * and `sql` matched the bare word CREATE — which is also ordinary Italian.
+ * Since the middleware blocks on detection, that was a 400 on queries like
+ * "opere create dal comune di Milano".
  */
 
 import { createMiddleware } from "hono/factory";
@@ -18,35 +23,19 @@ import type { Env } from "../app";
 // ============================================================================
 
 const INJECTION_PATTERNS = {
-  // SQL Injection patterns
-  sql: [
-    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|TRUNCATE)\b)/i,
-    /('|")\s*(OR|AND)\s*('|"|\d)/i,
-    /;\s*--/,
-    /\/\*[\s\S]*?\*\//,
-  ],
-
-  // NoSQL Injection patterns
-  nosql: [
-    /\$where\s*:/i,
-    /\$regex\s*:/i,
-    /\$gt\s*:/i,
-    /\$ne\s*:/i,
-    /\{\s*\$\w+/,
-  ],
-
-  // Command injection patterns
-  command: [
-    /[;&|`$]|\$\(/,
-    /\b(eval|exec|system|spawn|fork)\s*\(/i,
-    /\|\||\&\&/,
-  ],
-
-  // XSS patterns
+  // XSS patterns.
+  //
+  // Event handlers and javascript: URLs are matched only in the markup
+  // position that actually makes them dangerous. Unanchored, `on\w+\s*=`
+  // matches any Italian word ending in -one/-zione before an equals sign
+  // ("Manutenzione = ordinaria", "Certificazione = ISO 9001"), and
+  // `javascript\s*:` matches an IT supplier listing "JavaScript: 5 anni" in
+  // their company profile. Both are ordinary content on this platform, and
+  // this middleware rejects the whole request on a match.
   xss: [
     /<script[\s\S]*?>[\s\S]*?<\/script>/gi,
-    /javascript\s*:/gi,
-    /on\w+\s*=/gi,
+    /<[^>]+\son\w+\s*=/gi,
+    /(?:href|src|action|formaction)\s*=\s*["'\s]*javascript\s*:/gi,
     /<iframe/gi,
     /<object/gi,
     /<embed/gi,
@@ -83,7 +72,14 @@ function containsDangerousPattern(
   const patterns = INJECTION_PATTERNS[category];
 
   for (const pattern of patterns) {
+    // These patterns carry the `g` flag (sanitizePrompt needs it to replace
+    // every occurrence), which makes `.test()` stateful: it resumes from
+    // `lastIndex` and resets to 0 only when it fails. Testing the same payload
+    // twice returns true, then false. Without this reset every second attack
+    // slips through.
+    pattern.lastIndex = 0;
     if (pattern.test(value)) {
+      pattern.lastIndex = 0;
       return { detected: true, pattern: pattern.source };
     }
   }
@@ -153,7 +149,7 @@ export interface SanitizationConfig {
 
 const DEFAULT_CONFIG: SanitizationConfig = {
   blockOnDetection: true,
-  categories: ["sql", "nosql", "command", "xss", "promptInjection"],
+  categories: ["xss", "promptInjection"],
   skipPaths: ["/health", "/"],
   logViolations: true,
 };
@@ -168,7 +164,7 @@ export function sanitizationMiddleware(config: Partial<SanitizationConfig> = {})
     const path = c.req.path;
 
     // Skip excluded paths
-    if (finalConfig.skipPaths.some((p) => path.startsWith(p))) {
+    if (finalConfig.skipPaths.some((p) => path === p || path.startsWith(p + "/"))) {
       return next();
     }
 
@@ -238,7 +234,11 @@ export function sanitizePrompt(input: string): {
   let sanitized = input;
 
   for (const pattern of INJECTION_PATTERNS.promptInjection) {
+    // Same stateful-`g` hazard as containsDangerousPattern: a bare `.test()`
+    // here would skip the replace on every second call.
+    pattern.lastIndex = 0;
     if (pattern.test(sanitized)) {
+      pattern.lastIndex = 0;
       detectedPatterns.push(pattern.source);
       sanitized = sanitized.replace(pattern, "[FILTERED]");
     }

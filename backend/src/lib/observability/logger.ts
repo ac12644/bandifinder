@@ -278,13 +278,6 @@ export function generateTraceId(): string {
 }
 
 /**
- * Generate a unique span ID.
- */
-export function generateSpanId(): string {
-  return `span_${Math.random().toString(36).substring(2, 10)}`;
-}
-
-/**
  * Generate a unique request ID.
  */
 export function generateRequestId(): string {

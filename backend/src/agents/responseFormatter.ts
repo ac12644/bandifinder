@@ -4,7 +4,14 @@
  * Extracts structured data from agent responses.
  */
 
-export interface Tender {
+/**
+ * A tender as parsed out of an agent's JSON reply.
+ *
+ * Deliberately not `lib/types.Tender`: every field is optional because this
+ * is model output, and the key names are the ones the prompts ask for
+ * (`pdf`, not `pdfUrl`).
+ */
+export interface ParsedTender {
   publicationNumber?: string;
   noticeId?: string;
   title?: string;
@@ -39,7 +46,7 @@ export interface ContractReview {
 }
 
 export interface StructuredResponse {
-  tenders?: Tender[];
+  tenders?: ParsedTender[];
   contractReview?: ContractReview;
   metadata?: {
     query?: string;
